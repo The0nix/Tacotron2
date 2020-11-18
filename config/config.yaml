@@ -1,0 +1,58 @@
+common:
+  seed: 1337
+data:
+  root: "data/ljspeech"
+  sample_rate: 16000
+  train_size: 0.95
+preprocessing:
+  f_min: 0
+  f_max: 8000
+  win_length: 1024
+  hop_length: 256
+  n_fft: 1024
+  n_mels: 80
+  power: 1.0
+  clip_min_value: 1e-5
+  label_encoder_filename: "le.pickle"
+model:
+optimizer:
+  lr: 1e-3
+training:
+  gpus: 1
+  n_epochs: 100
+  num_workers: 12
+  batch_size: 64
+wandb:
+  project: "Tamerlan-Tabolov-Tacotron2"
+  log_freq: 3
+train_transforms:
+  - _target_: core.transforms.ToNumpy
+  - _target_: core.transforms.Squeeze
+  - _target_: audiomentations.TimeStretch
+    min_rate: 0.8
+    max_rate: 1.25
+    p: 0.5
+  - _target_: core.transforms.MelSpectrogram
+    sample_rate: ${data.sample_rate}
+    f_min: ${preprocessing.f_min}
+    f_max: ${preprocessing.f_max}
+    n_fft: ${preprocessing.n_fft}
+    n_mels: ${preprocessing.n_mels}
+    win_length: ${preprocessing.win_length}
+    hop_length: ${preprocessing.hop_length}
+    clip_min_value: ${preprocessing.clip_min_value}
+    power: ${preprocessing.power}
+  - _target_: core.transforms.LogTransform
+inference_transforms:
+  - _target_: core.transforms.MelSpectrogram
+    sample_rate: ${data.sample_rate}
+    f_min: ${preprocessing.f_min}
+    f_max: ${preprocessing.f_max}
+    n_fft: ${preprocessing.n_fft}
+    n_mels: ${preprocessing.n_mels}
+    hop_length: ${preprocessing.hop_length}
+  - _target_: core.transforms.LogTransform
+inference:
+  device: "gpu"
+  checkpoint_path: ???
+  audio_path: ???
