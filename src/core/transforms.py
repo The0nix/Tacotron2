@@ -1,25 +1,39 @@
-from typing import Union, Sequence, List
 import pickle
+import warnings
+from typing import Union, Sequence
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torchaudio
 import torchnlp.encoders.text
+import librosa
 
 
-class MelSpectrogram(torchaudio.transforms.MelSpectrogram):
+class MelSpectrogram(nn.Module):
     """
     torchaudio MelSpectrogram wrapper for audiomentations's Compose
     """
     def __init__(self, clip_min_value=1e-5, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        self.transform = torchaudio.transforms.MelSpectrogram(**kwargs)
         self.clip_min_value = clip_min_value
+
+        mel_basis = librosa.filters.mel(
+            sr=kwargs["sample_rate"],
+            n_fft=kwargs["n_fft"],
+            n_mels=kwargs["n_mels"],
+            fmin=kwargs["f_min"],
+            fmax=kwargs["f_max"],
+        ).T
+        self.transform.mel_scale.fb.copy_(torch.tensor(mel_basis))
 
     def forward(self, samples: Union[np.ndarray, torch.Tensor], sample_rate: int) -> torch.Tensor:
         if not isinstance(samples, torch.Tensor):
             samples = torch.tensor(samples)
-        samples = super(MelSpectrogram, self).forward(samples)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            samples = self.transform.forward(samples)
         samples.clamp_(min=self.clip_min_value)
         return samples
 
@@ -50,7 +64,7 @@ class LogTransform(nn.Module):
         self.fill_value = fill_value
 
     def __call__(self, samples: torch.Tensor, sample_rate: int):
-        samples = samples + torch.full_like(samples, self.fill_value) * (samples <= 0)
+        samples = samples.masked_fill((samples <= 0), self.fill_value)
         return torch.log(samples)
 
 

@@ -1,16 +1,14 @@
-import collections
-
 import random
+from typing import Sequence
+
+import audiomentations as aud
+import hydra
 import numpy as np
 import sklearn
 import torch
-import torch.utils.data as torchdata
 import torch.nn as nn
-import audiomentations as aud
-import hydra
+import torch.utils.data as torchdata
 from omegaconf import DictConfig
-
-import core
 
 
 def fix_seeds(seed=1337):
@@ -51,14 +49,31 @@ def get_split(dataset: torchdata.Dataset, train_size: float, random_state: int):
 
 
 class PadCollator:
-    def __init__(self, padding_value=-999.):
-        self.padding_value = padding_value
+    def __init__(self, spectrogram_padding_value=-999., transcription_padding_value=0):
+        self.spectrogram_padding_value = spectrogram_padding_value
+        self.transcription_padding_value = transcription_padding_value
 
     def __call__(self, batch):
         spectrograms, transcriptions = zip(*batch)
 
-        lengths = torch.tensor([len(s) for s in spectrograms])
-        spectrograms = nn.utils.rnn.pad_sequence([s.transpose(0, 1) for s in spectrograms],
-                                                 batch_first=True, padding_value=self.padding_value)
+        spectrogram_lengths = torch.tensor([s.shape[1] for s in spectrograms])
+        transcription_lengths = torch.tensor([t.shape[0] for t in transcriptions])
+        spectrograms = nn.utils.rnn.pad_sequence(
+            [s.transpose(0, 1) for s in spectrograms],
+            batch_first=True, padding_value=self.spectrogram_padding_value
+        ).transpose(1, 2)
+        transcriptions = nn.utils.rnn.pad_sequence(
+            transcriptions,
+            batch_first=True, padding_value=self.transcription_padding_value
+        )
 
-        return spectrograms, transcriptions, lengths
+        return spectrograms, transcriptions, spectrogram_lengths, transcription_lengths
+
+
+def lengths_to_mask(lengths: torch.Tensor) -> torch.Tensor:
+    """
+    Creates masking tensor from a list of lengths
+    :param lengths: tensor of lengths
+    :return: tensor of shape (batch_size, max_length) with mask (Trues and Falses)
+    """
+    return torch.arange(max(lengths), device=lengths.device)[None, :] < lengths[:, None]

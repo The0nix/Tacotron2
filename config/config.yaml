@@ -2,8 +2,9 @@ common:
   seed: 1337
 data:
   root: "data/ljspeech"
-  sample_rate: 16000
-  train_size: 0.95
+  sample_rate: 22050
+  train_size: 0.99
+  eos: "№"  # EOS token
 preprocessing:
   f_min: 0
   f_max: 8000
@@ -14,24 +15,39 @@ preprocessing:
   power: 1.0
   clip_min_value: 1e-5
   label_encoder_filename: "le.pickle"
-model:
+model:  # See Tacotron2 class in src/core/model.py for descriptions
+  vocoder_checkpoint_path: "waveglow_256channels_universal_v5.pt"  # Path to saved vocoder
+  checkpoint_path: ???  # Path to lightning checkpoint to continue training (ignores further parameters)
+  embedding_dim: 512
+  encoder_conv_kernels: [5, 5, 5]
+  encoder_conv_channels: [512, 512, 512]
+  encoder_lstm_dim: 256
+  attention_lstm_dim: 1024
+  attention_hidden_dim: 128
+  attention_location_channels: 32
+  attention_kernel_size: 31
+  prenet_fc_dims: [256, 256]
+  decoder_lstm_dim: 1024
+  postnet_conv_kernels: [5, 5, 5, 5, 5]
+  postnet_conv_channels: [512, 512, 512, 512, "${preprocessing.n_mels}"]
 optimizer:
   lr: 1e-3
 training:
-  gpus: 1
-  n_epochs: 100
+  gpus: 1  # Number of gpus (not list of indices)
+  n_epochs: 1000
   num_workers: 12
-  batch_size: 64
+  batch_size: 32
+  val_check_interval: 1.0
 wandb:
   project: "Tamerlan-Tabolov-Tacotron2"
   log_freq: 3
 train_transforms:
-  - _target_: core.transforms.ToNumpy
+#  - _target_: core.transforms.ToNumpy
   - _target_: core.transforms.Squeeze
-  - _target_: audiomentations.TimeStretch
-    min_rate: 0.8
-    max_rate: 1.25
-    p: 0.5
+#  - _target_: audiomentations.TimeStretch
+#    min_rate: 0.8
+#    max_rate: 1.25
+#    p: 0.5
   - _target_: core.transforms.MelSpectrogram
     sample_rate: ${data.sample_rate}
     f_min: ${preprocessing.f_min}
@@ -44,15 +60,22 @@ train_transforms:
     power: ${preprocessing.power}
   - _target_: core.transforms.LogTransform
 inference_transforms:
+  - _target_: core.transforms.Squeeze
   - _target_: core.transforms.MelSpectrogram
     sample_rate: ${data.sample_rate}
     f_min: ${preprocessing.f_min}
     f_max: ${preprocessing.f_max}
     n_fft: ${preprocessing.n_fft}
     n_mels: ${preprocessing.n_mels}
+    win_length: ${preprocessing.win_length}
     hop_length: ${preprocessing.hop_length}
+    clip_min_value: ${preprocessing.clip_min_value}
+    power: ${preprocessing.power}
   - _target_: core.transforms.LogTransform
 inference:
-  device: "gpu"
-  checkpoint_path: ???
-  audio_path: ???
+  device: "cuda"
+  checkpoint_path: "./try.ckpt"
+  text: "So, so what? I'm still a rock star I got my rock moves"
+  label_encoder_path: "le.pickle"
+  inferenced_path: "inferenced"  # Path to dir with inferenced files
+  vocoder_checkpoint_path: "waveglow_256channels_universal_v5.pt"

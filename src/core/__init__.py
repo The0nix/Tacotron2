@@ -1,1 +1,1 @@
-from . import dataset, transforms, utils
+from . import dataset, model, transforms, utils, vocoder
