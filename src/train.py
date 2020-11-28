@@ -42,8 +42,7 @@ def main(cfg: DictConfig):
     # Create dataloaders
     collate_fn = core.utils.PadCollator(np.log(cfg.preprocessing.clip_min_value), 0)
     train_dataloader = torchdata.DataLoader(train_dataset,
-                                            # batch_sampler=train_sampler,
-                                            batch_size=cfg.training.batch_size, shuffle=False,
+                                            batch_sampler=train_sampler,
                                             num_workers=cfg.training.num_workers,
                                             collate_fn=collate_fn)
     val_dataloader = torchdata.DataLoader(val_dataset,
@@ -74,17 +73,6 @@ def main(cfg: DictConfig):
                                      n_mels=cfg.preprocessing.n_mels,
                                      optimizer_lr=cfg.optimizer.lr,
                                      vocoder=vocoder)
-
-    # import torch.autograd.profiler as profiler
-    # model = model.cuda()
-    # with profiler.profile(profile_memory=True, record_shapes=True) as prof:
-    #     spectrograms, transcriptions, spectrogram_lengths, transcription_lengths = next(iter(train_dataloader))
-    #     batch_size, _, seq_len = spectrograms.shape
-    #     transcription_mask = core.utils.lengths_to_mask(transcription_lengths)
-    #
-    #     model(transcriptions.cuda(), transcription_mask.cuda(), gt_melspecs=spectrograms.cuda())
-    # print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=30))
-    # exit(0)
 
     # Define logger and trainer
     wandb_logger = pl.loggers.WandbLogger(project=cfg.wandb.project)

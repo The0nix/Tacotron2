@@ -344,7 +344,7 @@ class Tacotron2(pl.LightningModule):
                 self.decoder(decoder_input, glimpse, (decoder_lstm_hidden, decoder_lstm_cell))
             result_frames.append(new_frame)
             p_end_list.append(p_end)
-            if gt_melspecs is None and (p_end > 0.5).all():
+            if gt_melspecs is None and (p_end.sigmoid() > 0.5).all():
                 break
 
         # Make tensors and apply postnet

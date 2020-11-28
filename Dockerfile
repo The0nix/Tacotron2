@@ -8,6 +8,8 @@ RUN apt-get -y update && apt-get -y install libsndfile1-dev
 
 RUN pip install -r requirements.txt
 
+COPY waveglow waveglow
+
 ENV PYTHONPATH=src
 
 COPY src src

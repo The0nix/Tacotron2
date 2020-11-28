@@ -42,12 +42,7 @@ wandb:
   project: "Tamerlan-Tabolov-Tacotron2"
   log_freq: 3
 train_transforms:
-#  - _target_: core.transforms.ToNumpy
   - _target_: core.transforms.Squeeze
-#  - _target_: audiomentations.TimeStretch
-#    min_rate: 0.8
-#    max_rate: 1.25
-#    p: 0.5
   - _target_: core.transforms.MelSpectrogram
     sample_rate: ${data.sample_rate}
     f_min: ${preprocessing.f_min}
@@ -74,8 +69,8 @@ inference_transforms:
   - _target_: core.transforms.LogTransform
 inference:
   device: "cuda"
-  checkpoint_path: "./try.ckpt"
-  text: "So, so what? I'm still a rock star I got my rock moves"
+  checkpoint_path: "./last.ckpt"
+  text: "so, so what? i'm still a rock star i got my rock moves"
   label_encoder_path: "le.pickle"
   inferenced_path: "inferenced"  # Path to dir with inferenced files
   vocoder_checkpoint_path: "waveglow_256channels_universal_v5.pt"

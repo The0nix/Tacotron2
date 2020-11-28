@@ -22,8 +22,9 @@ def main(cfg: DictConfig):
     label_encoder = core.transforms.LabelEncoder.from_file(
         hydra.utils.to_absolute_path(cfg.inference.label_encoder_path)
     )
-    encoded_text = label_encoder(cfg.inference.text).to(cfg.inference.device)
-    _, spectrogram, _ = model(encoded_text.unsqueeze(0))
+
+    encoded_text = label_encoder(cfg.inference.text + cfg.data.eos).to(cfg.inference.device)
+    _, spectrogram, p_end, _ = model(encoded_text.unsqueeze(0))
     audio = vocoder.inference(spectrogram)
 
     torchaudio.save(str(output_audio_path), audio.cpu(), sample_rate=cfg.data.sample_rate)

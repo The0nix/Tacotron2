@@ -1,6 +1,7 @@
 tmp_dir=$(mktemp -d -t inference-XXXXXXXXXX)
 cp $1 $tmp_dir  # Copy model into temp for docker
-cp $3 $tmp_dir  # Copy input file
+cp $2 $tmp_dir  # Copy label encoder
+cp $3 $tmp_dir  # Copy waveglow model
 
 docker run \
 	-it \
@@ -19,7 +20,8 @@ docker run \
 	bash -c "
     python ./src/inference.py \
     inference.checkpoint_path=inference_files/$(basename $1) \
-    inference.device=$2 \
-    inference.audio_path=inference_files/$(basename $3)
-	"
-rm -rf $tmp_dir
+    inference.label_encoder_path=inference_files/$(basename $2) \
+    inference.vocoder_checkpoint_path=inference_files/$(basename $3) \
+    inference.device=$4 \
+    inference.text=\"$5\"
+	" || rm -rf $tmp_dir
