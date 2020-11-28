@@ -2,6 +2,7 @@
 Implementation of [Tacotron 2](https://arxiv.org/pdf/1712.05884.pdf) TTS model in PyTorch
 
 ## Usage
+Note: don't forget to clone the repo with `git clone --recurse-submodules`
 
 ### Setup
 To launch and inference in nvidia-docker container follow these instructions:
@@ -12,7 +13,7 @@ To launch and inference in nvidia-docker container follow these instructions:
 ### Training
 To launch training follow these instructions:
 
-1. Set preferred configurations in `config/config.yaml` or leave it as it is
+1. Set preferred configurations in `config/config.yaml` in particular you might want to set dataset path (it will be concatendated with data path in `docker-train.sh`)
 2. In `docker-run.sh` change `memory`, `memory-swap`, `shm-size`, `cpuset-cpus`, `gpus`, and data `volume` to desired values
 3. Set WANDB_API_KEY environment variable to your wandb key
 4. Run `./docker-train.sh`
