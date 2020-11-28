@@ -1,3 +1,4 @@
+set -e
 tmp_dir=$(mktemp -d -t inference-XXXXXXXXXX)
 cp $1 $tmp_dir  # Copy model into temp for docker
 cp $2 $tmp_dir  # Copy label encoder
