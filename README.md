@@ -16,7 +16,10 @@ To launch training follow these instructions:
 1. Set preferred configurations in `config/config.yaml` in particular you might want to set dataset path (it will be concatendated with data path in `docker-train.sh`)
 2. In `docker-run.sh` change `memory`, `memory-swap`, `shm-size`, `cpuset-cpus`, `gpus`, and data `volume` to desired values
 3. Set WANDB_API_KEY environment variable to your wandb key
-4. Run `./docker-train.sh`
+4. Run `./docker-train.sh waveglow_model_path`
+
+Where:
+* `waveglow_model_path` is a path to waveglow .pt model file. It can be downloaded [here](https://drive.google.com/file/d/1rpK8CzAAirq9sWZhe9nlfvxMF1dRgFbF/view) (Link from https://github.com/NVIDIA/waveglow)
 
 All outputs including models will be saved to `outputs` dir.
 
@@ -28,7 +31,7 @@ To launch inference run the following command:
 Where:
 * `model_path` is a path to .ckpt model file
 * `label_encoder_path` is a path to .pickle label encoder file. It is generated during training by `fut_label_encoder.py` script
-* `waveglow_model_path` is a path to wavegkiw .pt model file. It can be downloaded [here](https://drive.google.com/file/d/1rpK8CzAAirq9sWZhe9nlfvxMF1dRgFbF/view) (Link from https://github.com/NVIDIA/waveglow)
+* `waveglow_model_path` is a path to waveglow .pt model file. It can be downloaded [here](https://drive.google.com/file/d/1rpK8CzAAirq9sWZhe9nlfvxMF1dRgFbF/view) (Link from https://github.com/NVIDIA/waveglow)
 * `device` is the device to inference on: either 'cpu', 'cuda' or cuda device number
 * `input_text` is an input text for TTS
 
