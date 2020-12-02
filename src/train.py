@@ -78,10 +78,12 @@ def main(cfg: DictConfig):
     wandb_logger = pl.loggers.WandbLogger(project=cfg.wandb.project)
     wandb_logger.watch(model, log="gradients", log_freq=cfg.wandb.log_freq)
     checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val_loss", save_last=True, save_top_k=1)
+    lr_monitor_callback = pl.callbacks.LearningRateMonitor()
     trainer = pl.Trainer(max_epochs=cfg.training.n_epochs, gpus=cfg.training.gpus,
                          logger=wandb_logger, default_root_dir="checkpoints",
-                         checkpoint_callback=checkpoint_callback,
-                         val_check_interval=cfg.training.val_check_interval)
+                         callbacks=[checkpoint_callback, lr_monitor_callback],
+                         val_check_interval=cfg.training.val_check_interval,
+                         gradient_clip_val=cfg.training.gradient_clip_val)
 
     # FIT IT!
     trainer.fit(model, train_dataloader, val_dataloader)
