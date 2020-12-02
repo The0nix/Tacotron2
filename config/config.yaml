@@ -71,7 +71,7 @@ inference_transforms:
 inference:
   device: "cuda"
   checkpoint_path: "./last.ckpt"
-  text: "so, so what? i'm still a rock star i got my rock moves"
+  text: "So, so what? I'm still a rock star I got my rock moves"
   label_encoder_path: "le.pickle"
   inferenced_path: "inferenced"  # Path to dir with inferenced files
   vocoder_checkpoint_path: "waveglow_256channels_universal_v5.pt"
