@@ -37,5 +37,10 @@ Where:
 
 Predicted output wav and spectrogram will be saved in `inferenced` folder
 
+Full example:
+```
+./docker-inference.sh ./last.ckpt ./le.pickle ../../Tacotron2/waveglow_256channels_universal_v5.pt cuda 'So, so what? I'\''m still a rock star I got my rock moves!'
+```
+
 ## Pretrained models
 All pretrained files for inference (tacotron 2 checkpoint trained on LJSpeech, label encoder and waveglow checkpoint) can be downloaded [here](https://drive.google.com/drive/folders/1f9sqm9-8zU5Z4J7wLelLMHVRJmTiemmm?usp=sharing).

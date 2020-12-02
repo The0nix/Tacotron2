@@ -1,7 +1,8 @@
 set -e
-tmp_dir=$(mktemp -d -t inference-XXXXXXXXXX)
+tmp_dir=$(mktemp -d -t tacotron-train-XXXXXXXXXX)
 cp $1 $tmp_dir  # Copy waveglow model
 
+set +e
 docker run \
 	-it \
 	--memory=8g \
@@ -19,4 +20,4 @@ docker run \
 	  python ./src/fit_label_encoder.py && \
     python ./src/train.py \
     model.vocoder_checkpoint_path=files/$(basename $1)
-	" || rm -rf $tmp_dir
+	"; rm -rf $tmp_dir
