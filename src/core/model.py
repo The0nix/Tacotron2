@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import wandb
+from omegaconf import DictConfig
 
 import core
 import core.vocoder
@@ -181,6 +182,31 @@ class TacotronDecoder(nn.Module):
         return new_frame, p_end, (lstm_hidden, lstm_cell)
 
 
+class LRDecayFunction:
+    def __init__(self, init_lr: float, decayed_lr: float, start_decay: int, end_decay: int):
+        """
+        Class creating callable for LambdaLR scheduler. It keeps lr init_lr until start_decay epoch,
+        then exponentially decays lr to decayed_lr until end_decay epoch and then keeps it decayed_lr
+        :param init_lr: Initial learning rate
+        :param decayed_lr: Learning rate after decay
+        :param start_decay: Epoch to start decay on
+        :param end_decay: Epoch to end decay on
+        """
+        self.init_lr = init_lr
+        self.decayed_lr = decayed_lr
+        self.start_decay = start_decay
+        self.end_decay = end_decay
+        self.exp_decay_factor = (decayed_lr / init_lr) ** (1 / (end_decay - start_decay))
+
+    def __call__(self, epoch):
+        if epoch <= self.start_decay:
+            return 1.
+        elif self.start_decay < epoch <= self.end_decay:
+            return self.exp_decay_factor ** (epoch - self.start_decay)
+        else:
+            return self.decayed_lr / self.init_lr
+
+
 class Tacotron2(pl.LightningModule):
     """
     Tacotron 2 model
@@ -199,7 +225,8 @@ class Tacotron2(pl.LightningModule):
     :param postnet_conv_kernels: List of convolution kernel sizes in postnet
     :param postnet_conv_channels: List of convolution output channels in postnet (last must be equal to n_mels)
     :param n_mels: resolution of mel spectrogram to produce
-    :param optimizer_lr: learning rate for Adam optimizer
+    :param optimizer_lr_config: DictConfig with lr value and optionally lr_decayed, start_decay, end_decay
+    for configuring Adam optimizer
     :param vocoder: optional vocoder for saving audio samples during validation
     """
     def __init__(self, num_embeddings: int, embedding_dim: int, encoder_conv_kernels: Sequence[int],
@@ -207,11 +234,12 @@ class Tacotron2(pl.LightningModule):
                  attention_lstm_dim: int, attention_hidden_dim: int, attention_location_channels: int,
                  attention_kernel_size: int, prenet_fc_dims: List[int], decoder_lstm_dim: int,
                  postnet_conv_kernels: Sequence[int], postnet_conv_channels: List[int],
-                 n_mels: int, optimizer_lr: float, vocoder: Optional[core.vocoder.Vocoder] = None) -> None:
+                 n_mels: int, optimizer_lr_config: DictConfig,
+                 vocoder: Optional[core.vocoder.Vocoder] = None) -> None:
         super().__init__()
         self.vocoder = vocoder
         self.save_hyperparameters()
-        self.optimizer_lr = optimizer_lr
+        self.optimizer_lr_config = optimizer_lr_config
         assert postnet_conv_channels[-1] == n_mels, "Last convolution in postnet must " \
                                                     "have output channels equal to n_mels"
         self.n_mels = n_mels
@@ -452,8 +480,12 @@ class Tacotron2(pl.LightningModule):
             self.logger.experiment.log({"Inferenced audio": inf_audio}, commit=False)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.optimizer_lr)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, min_lr=1e-5)
+        lr_cfg = self.optimizer_lr_config
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr_cfg.lr)
+        # Create lambda lr function with proper parameters
+        lr_lambda = LRDecayFunction(init_lr=lr_cfg.lr, decayed_lr=lr_cfg.lr_decayed,
+                            start_decay=lr_cfg.start_decay, end_decay=lr_cfg.end_decay)
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
         return {
             "optimizer": optimizer,
             "lr_scheduler": scheduler,

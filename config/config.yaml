@@ -1,6 +1,7 @@
 common:
   seed: 1337
 data:
+  dataset: "LJSpeech"  # Either RUSLAN or LJSpeech
   root: "data/ljspeech"
   sample_rate: 22050
   train_size: 0.99
@@ -30,15 +31,19 @@ model:  # See Tacotron2 class in src/core/model.py for descriptions
   decoder_lstm_dim: 1024
   postnet_conv_kernels: [5, 5, 5, 5, 5]
   postnet_conv_channels: [512, 512, 512, 512, "${preprocessing.n_mels}"]
-optimizer:
-  lr: 1e-3
 training:
   gpus: 1  # Number of gpus (not list of indices)
-  n_epochs: 1000
+  n_epochs: 100
+  epoch_size: 1000
   num_workers: 12
   batch_size: 32
-  val_check_interval: 1.0
+  val_check_interval: 0.5
   gradient_clip_val: 1.0
+optimizer:
+  lr: 1e-3
+  lr_decayed: 1e-5
+  start_decay: 50
+  end_decay: 70
 wandb:
   project: "Tamerlan-Tabolov-Tacotron2"
   log_freq: 3

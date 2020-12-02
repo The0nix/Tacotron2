@@ -17,20 +17,22 @@ def main(cfg: DictConfig):
     label_encoder = core.transforms.LabelEncoder.from_file(
         hydra.utils.to_absolute_path(cfg.preprocessing.label_encoder_filename)
     )
-    train_dataset = core.dataset.LJSPEECH(root=hydra.utils.to_absolute_path(cfg.data.root),
-                                          transforms=transforms,
-                                          transcript_transforms=label_encoder,
-                                          eos=cfg.data.eos,
-                                          download=True)
-    val_dataset = core.dataset.LJSPEECH(root=hydra.utils.to_absolute_path(cfg.data.root),
-                                        transforms=inference_transforms,
-                                        transcript_transforms=label_encoder,
-                                        eos=cfg.data.eos,
-                                        download=True)
-    dataset_lengths = np.array([len(train_dataset.get_normalized_transcript(idx)) for idx in range(len(train_dataset))])
+
+    dataset_class = core.utils.get_dataset_class(cfg.data.dataset)
+    train_dataset = dataset_class(root=hydra.utils.to_absolute_path(cfg.data.root),
+                                  transforms=transforms,
+                                  transcript_transforms=label_encoder,
+                                  eos=cfg.data.eos)
+    val_dataset = dataset_class(root=hydra.utils.to_absolute_path(cfg.data.root),
+                                transforms=inference_transforms,
+                                transcript_transforms=label_encoder,
+                                eos=cfg.data.eos)
+    dataset_lengths = np.array([len(train_dataset.get_transcript(idx)) for idx in range(len(train_dataset))])
 
     # Split data with stratification
-    train_idx, val_idx = core.utils.get_split(train_dataset, train_size=cfg.data.train_size, random_state=cfg.common.seed)
+    train_idx, val_idx = core.utils.get_split(train_dataset,
+                                              train_size=cfg.data.train_size,
+                                              random_state=cfg.common.seed)
     train_dataset = torchdata.Subset(train_dataset, train_idx)
     val_dataset = torchdata.Subset(val_dataset, val_idx)
 
@@ -38,6 +40,7 @@ def main(cfg: DictConfig):
     train_dataset_lengths = dataset_lengths[train_idx]
     train_sampler = core.dataset.RandomBySequenceLengthSampler(train_dataset_lengths,
                                                                cfg.training.batch_size,
+                                                               epoch_size=cfg.training.epoch_size,
                                                                percentile=0.98)
     # Create dataloaders
     collate_fn = core.utils.PadCollator(np.log(cfg.preprocessing.clip_min_value), 0)
@@ -71,7 +74,7 @@ def main(cfg: DictConfig):
                                      postnet_conv_kernels=cfg.model.postnet_conv_kernels,
                                      postnet_conv_channels=postnet_conv_channels,
                                      n_mels=cfg.preprocessing.n_mels,
-                                     optimizer_lr=cfg.optimizer.lr,
+                                     optimizer_lr_config=cfg.optimizer,
                                      vocoder=vocoder)
 
     # Define logger and trainer

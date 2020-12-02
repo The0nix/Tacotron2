@@ -1,5 +1,4 @@
 import random
-from typing import Sequence
 
 import audiomentations as aud
 import hydra
@@ -10,6 +9,8 @@ import torch.nn as nn
 import torch.utils.data as torchdata
 from omegaconf import DictConfig
 
+import core.dataset
+
 
 def fix_seeds(seed=1337):
     torch.manual_seed(seed)
@@ -18,6 +19,16 @@ def fix_seeds(seed=1337):
     random.seed(seed)
     torch.backends.cudnn.enabled = False
     torch.backends.cudnn.deterministic = True
+
+
+def get_dataset_class(dataset_name):
+    if dataset_name.lower() == "ljspeech":
+        dataset_class = core.dataset.LJSPEECH
+    elif dataset_name.lower() == "ruslan":
+        dataset_class = core.dataset.RUSLAN
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+    return dataset_class
 
 
 def get_transforms(transforms: DictConfig):
